@@ -14,6 +14,21 @@ export function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
+export function truncateReleaseNotes(notes: string, releaseUrl: string, limit = 3500): string {
+  if (notes.length <= limit) return notes;
+
+  const suffix = `\n[Read the full notes](${releaseUrl})`;
+  const budget = Math.min(limit, 4096 - suffix.length);
+
+  const cut = notes.lastIndexOf("\n", budget);
+  const trimmed = (cut > 0 ? notes.slice(0, cut) : notes.slice(0, budget)).trimEnd();
+
+  const fenceCount = (trimmed.match(/^```/gm) ?? []).length;
+  const closeIfNeeded = fenceCount % 2 !== 0 ? "\n```" : "";
+
+  return `${trimmed}${closeIfNeeded}${suffix}`;
+}
+
 // Markdown characters in a title would otherwise change how the line renders.
 export function escapeMarkdown(text: string): string {
   return text.replace(/([\\*_~`|>\[\]()])/g, "\\$1");
@@ -33,7 +48,7 @@ export function releaseMessage(repo: string, release: { name: string | null; tag
       {
         title: truncate(title, 256),
         url: release.html_url,
-        description: truncate(release.body?.trim() || "No release notes.", 3500),
+        description: truncateReleaseNotes(release.body?.trim() || "No release notes.", release.html_url),
         color: COLOR.release,
       },
     ],

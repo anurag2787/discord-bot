@@ -9,6 +9,7 @@ import {
   starterIssueMessage,
   starterIssuesReply,
   truncate,
+  truncateReleaseNotes,
 } from "../src/messages";
 import { makeEnv, OCTOBER } from "./helpers";
 
@@ -49,7 +50,39 @@ describe("releaseMessage", () => {
     const msg = releaseMessage("ogcops", { ...release, name: null, body: null });
     expect(msg.embeds?.[0]).toMatchObject({ title: "ogcops v0.6.2", description: "No release notes." });
     const long = releaseMessage("ogcops", { ...release, body: "x".repeat(6000) });
-    expect(long.embeds?.[0]?.description?.length).toBeLessThanOrEqual(3500);
+    expect(long.embeds?.[0]?.description?.length).toBeLessThanOrEqual(4096);
+  });
+});
+
+describe("truncateReleaseNotes", () => {
+  const url = "https://github.com/codercops/toolbelt/releases/tag/v1.0.0";
+
+  it("returns short notes completely unchanged", () => {
+    const notes = "Fixes a bug.\nSee the changelog.";
+    expect(truncateReleaseNotes(notes, url)).toBe(notes);
+  });
+
+  it("cuts long notes at the last line break and appends a link to the release", () => {
+    const line = "a".repeat(100);
+    const notes = Array.from({ length: 35 }, () => line).join("\n");
+    const result = truncateReleaseNotes(notes, url);
+    const [body] = result.split("\n[Read the full notes]");
+    expect(body?.trim().endsWith(line)).toBe(true);
+    expect(result).toContain(`[Read the full notes](${url})`);
+    expect(result.length).toBeLessThanOrEqual(4096);
+  });
+
+  it("closes an open code fence before the link", () => {
+    const notes = "```ts\n" + "const x = 1;\n".repeat(300) + "trailing\n".repeat(10);
+    const result = truncateReleaseNotes(notes, url);
+    expect(result).toMatch(/^```$/m);
+    expect(result).toContain(`[Read the full notes](${url})`);
+    expect(result.length).toBeLessThanOrEqual(4096);
+  });
+
+  it("stays within Discord's 4096-character embed description limit", () => {
+    const result = truncateReleaseNotes("word\n".repeat(1000), url);
+    expect(result.length).toBeLessThanOrEqual(4096);
   });
 });
 
