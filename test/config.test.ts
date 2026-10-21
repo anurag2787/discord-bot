@@ -14,6 +14,10 @@ describe("wrangler.jsonc configuration", () => {
     expect(config.triggers?.crons).toEqual([DAILY_CRON, WELCOME_CRON]);
   });
 
+  it("leaves out blocked issues from ISSUES_URL", () => {
+    expect(decodeURIComponent(config.vars?.ISSUES_URL ?? "")).toContain("-label:blocked");
+  });
+
   describe("PROGRAMS", () => {
     it("has unique IDs for every program", () => {
       const ids = cfg.programs.map((p) => p.id);

@@ -190,7 +190,7 @@ export function starterIssuesReply(
   const embeds: Embed[] = issuesByRepo.map(({ repo, issues }) => {
     // A comma between quoted labels means "any of these" in GitHub search.
     const labelFilter = labels.map((l) => `"${l}"`).join(",");
-    const listUrl = `https://github.com/${cfg.org}/${repo}/issues?q=${encodeURIComponent(`is:issue is:open no:assignee label:${labelFilter}`)}`;
+    const listUrl = `https://github.com/${cfg.org}/${repo}/issues?q=${encodeURIComponent(`is:issue is:open no:assignee -label:blocked label:${labelFilter}`)}`;
     const lines = issues
       .slice(0, perRepo)
       .map((i) => `[#${i.number}](${i.url}) ${escapeMarkdown(truncate(i.title, 90))}`);
