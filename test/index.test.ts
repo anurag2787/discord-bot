@@ -127,6 +127,26 @@ describe("public address", () => {
     const local = await worker.fetch(new Request("http://localhost:8787/leaderboard"), env, ctx);
     expect(local.status).toBe(200);
   });
+
+  it("redirects trailing slashes to the path without them, keeping query strings", async () => {
+    const { ctx } = makeCtx();
+    for (const path of ["/leaderboard/", "/leaderboard/2026-10/", "/leaderboard/2026-10/u/ada/"]) {
+      const res = await worker.fetch(new Request(`https://bot.example${path}`), env, ctx);
+      expect(res.status).toBe(301);
+      expect(res.headers.get("Location")).toBe(`https://bot.example${path.replace(/\/+$/, "")}`);
+    }
+
+    const withQuery = await worker.fetch(new Request("https://bot.example/leaderboard/2026-10/?x=1"), env, ctx);
+    expect(withQuery.status).toBe(301);
+    expect(withQuery.headers.get("Location")).toBe("https://bot.example/leaderboard/2026-10?x=1");
+
+    const head = await worker.fetch(new Request("https://bot.example/leaderboard/", { method: "HEAD" }), env, ctx);
+    expect(head.status).toBe(301);
+    expect(head.headers.get("Location")).toBe("https://bot.example/leaderboard");
+
+    const post = await worker.fetch(new Request("https://bot.example/leaderboard/", { method: "POST" }), env, ctx);
+    expect(post.status).toBe(404);
+  });
 });
 
 describe("POST /interactions", () => {

@@ -231,7 +231,6 @@ describe("GET /leaderboard", () => {
     expect(((await json.json()) as { id: string }).id).toBe("2026-10");
 
     expect((await worker.fetch(new Request("https://bot.example/leaderboard/2025-10"), env, ctx)).status).toBe(404);
-    expect((await worker.fetch(new Request("https://bot.example/leaderboard/"), env, ctx)).status).toBe(404);
     expect((await worker.fetch(new Request("https://bot.example/leaderboard", { method: "POST" }), env, ctx)).status).toBe(404);
     const none = await worker.fetch(new Request("https://bot.example/leaderboard"), makeEnv({ PROGRAMS: [] }), ctx);
     expect(none.status).toBe(404);

@@ -356,6 +356,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (read && pathname === "/" && onPublicHost) {
     return Response.redirect(`${publicUrl}/leaderboard`, 302);
   }
+  if (read && pathname !== "/" && pathname.endsWith("/")) {
+    return Response.redirect(`${url.origin}${pathname.replace(/\/+$/, "") || "/"}${url.search}`, 301);
+  }
   const page = read ? LEADERBOARD_PATH.exec(pathname) : null;
   if (page) return handleLeaderboardPage(request, env, page[1], page[2] !== undefined);
   const boardImage = read ? LEADERBOARD_IMAGE_PATH.exec(pathname) : null;
