@@ -58,9 +58,12 @@ export async function completeLink(env: Env, cfg: Config, query: URLSearchParams
 
   // The link is saved. Roles are a bonus, so a failure here doesn't undo it.
   let roles: string[] = [];
+  let mergedPrs = 0;
   try {
-    roles = await grantEarnedRoles(env, cfg, { discordId: identity.id, githubLogin: login }, await countMergedPrs(env, cfg, login));
+    mergedPrs = await countMergedPrs(env, cfg, login);
+    roles = await grantEarnedRoles(env, cfg, { discordId: identity.id, githubLogin: login }, mergedPrs);
   } catch (err) {
+    mergedPrs = 0;
     console.error("granting roles after linking failed", err);
   }
 
@@ -73,7 +76,9 @@ export async function completeLink(env: Env, cfg: Config, query: URLSearchParams
         ? `You already have merged pull requests with us, so you now have the ${roles.join(" and ")} role.`
         : isMaintainer(cfg, login)
           ? "Your merged pull requests will show up under your name in the server."
-          : "Your merged pull requests will show up under your name in the server, and your first one earns you the Contributor role.",
+          : mergedPrs > 0
+            ? `You already have ${mergedPrs} merged pull request${mergedPrs === 1 ? "" : "s"} with us.`
+            : "Your merged pull requests will show up under your name in the server, and your first one earns you the Contributor role.",
       "Run /me in the server to see where you stand. You can close this tab.",
     ],
   };

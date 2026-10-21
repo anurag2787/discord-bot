@@ -230,6 +230,27 @@ describe("GET /link/callback", () => {
     expect((await getLink(env, "42"))?.githubLogin).toBe("Ada");
   });
 
+  it("tells someone who already has the role about their merged PRs instead of promising the role", async () => {
+    const fetched = mockFetch(search(3), discordApi({ memberRoles: ["role-contributor"] }));
+    const res = await callback({ code: "c", state: await validState() });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("You already have 3 merged pull requests with us.");
+    expect(html).not.toContain("your first one earns you the Contributor role");
+    expect(fetched.calls.some((c) => c.url.includes("/roles/"))).toBe(false);
+
+    mockFetch(search(1), discordApi({ memberRoles: ["role-contributor"] }));
+    const single = await (await callback({ code: "c", state: await validState() })).text();
+    expect(single).toContain("You already have 1 merged pull request with us.");
+  });
+
+  it("tells someone with no merged PRs that their first one earns the role", async () => {
+    mockFetch(search(0), discordApi());
+    const res = await callback({ code: "c", state: await validState() });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("your first one earns you the Contributor role");
+  });
+
   it("escapes names that come from Discord", async () => {
     mockFetch(search(0), (call) =>
       call.url.endsWith("/users/@me") ? jsonResponse({ id: "42", username: "x", global_name: "<img src=x>" }) : discordApi()(call)
